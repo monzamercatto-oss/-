@@ -1,0 +1,5 @@
+{
+  "name": "Оцифровщик Сыщиков",
+  "description": "Convert Call of Cthulhu 7th Ed character sheets (PDF/Image) into Foundry VTT JSON and generate character tokens.",
+  "requestFramePermissions": []
+}
