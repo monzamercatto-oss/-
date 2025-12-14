@@ -39,7 +39,7 @@ const MysteriousRunes: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
       {runes.map((rune) => (
         <div
           key={rune.id}
@@ -58,15 +58,92 @@ const MysteriousRunes: React.FC = () => {
   );
 };
 
-const TypeCard = ({ type, label, icon, desc, onClick }: { type: ActorType, label: string, icon: string, desc: string, onClick: () => void }) => (
+// --- Custom Icons (Detailed Lovecraftian) ---
+
+const IconInvestigator = () => (
+  <svg className="w-32 h-32 text-emerald-500 transition-all duration-500 filter drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] group-hover:drop-shadow-[0_0_25px_rgba(16,185,129,0.6)] group-hover:text-emerald-400" viewBox="0 0 100 100" fill="currentColor">
+    <defs>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{stopColor:'rgb(16, 185, 129)', stopOpacity:1}} />
+        <stop offset="100%" style={{stopColor:'rgb(6, 78, 59)', stopOpacity:1}} />
+      </linearGradient>
+    </defs>
+    {/* Fedora Hat */}
+    <path d="M20,40 Q50,30 80,40 L85,45 L15,45 Z" fillOpacity="0.8" />
+    <path d="M25,40 L25,25 Q50,15 75,25 L75,40" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M10,45 Q50,55 90,45 L95,48 Q50,60 5,48 Z" fillOpacity="0.9" />
+    
+    {/* Magnifying Glass */}
+    <circle cx="65" cy="65" r="18" fill="none" stroke="currentColor" strokeWidth="3" />
+    <path d="M78,78 L90,90" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    <circle cx="65" cy="65" r="15" fill="currentColor" fillOpacity="0.2" />
+    <path d="M60,60 L70,70 M70,60 L60,70" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5" />
+    
+    {/* Revolver Silhouette behind */}
+    <path d="M10,80 L20,60 L45,60 L45,68 L25,68 L25,85 Z" fillOpacity="0.6" />
+    <rect x="45" y="60" width="20" height="8" rx="1" fillOpacity="0.6" />
+    <rect x="65" y="62" width="15" height="4" fillOpacity="0.6" />
+  </svg>
+);
+
+const IconCultist = () => (
+  <svg className="w-32 h-32 text-emerald-500 transition-all duration-500 filter drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] group-hover:drop-shadow-[0_0_25px_rgba(16,185,129,0.6)] group-hover:text-emerald-400" viewBox="0 0 100 100" fill="currentColor">
+    {/* Hooded Robe Shape */}
+    <path d="M50,10 Q20,10 20,40 L10,90 L90,90 L80,40 Q80,10 50,10 Z" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
+    
+    {/* Hood opening / Void face */}
+    <path d="M50,15 Q30,15 30,45 Q50,35 70,45 Q70,15 50,15 Z" fill="black" fillOpacity="0.6" />
+    
+    {/* Glowing Eyes */}
+    <circle cx="42" cy="35" r="2" fill="#34d399" className="animate-pulse" />
+    <circle cx="58" cy="35" r="2" fill="#34d399" className="animate-pulse" />
+    
+    {/* Shoulders/Drapery */}
+    <path d="M20,40 Q10,50 10,90 M80,40 Q90,50 90,90" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M30,90 Q50,80 70,90" fill="none" stroke="currentColor" strokeWidth="1" />
+    
+    {/* Amulet */}
+    <path d="M50,55 L50,75 M40,60 L60,60" stroke="currentColor" strokeWidth="1" />
+    <circle cx="50" cy="65" r="8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+const IconCreature = () => (
+  <svg className="w-32 h-32 text-emerald-500 transition-all duration-500 filter drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] group-hover:drop-shadow-[0_0_25px_rgba(16,185,129,0.6)] group-hover:text-emerald-400" viewBox="0 0 100 100" fill="currentColor">
+    {/* Bulbous Head */}
+    <path d="M30,30 Q50,0 70,30 Q80,40 75,55" fill="none" stroke="currentColor" strokeWidth="2" />
+    <path d="M25,55 Q20,40 30,30" fill="none" stroke="currentColor" strokeWidth="2" />
+    
+    {/* Many Eyes */}
+    <circle cx="40" cy="35" r="3" fill="currentColor" />
+    <circle cx="60" cy="35" r="3" fill="currentColor" />
+    <circle cx="50" cy="25" r="2" fill="currentColor" />
+    <circle cx="30" cy="45" r="1.5" fill="currentColor" />
+    <circle cx="70" cy="45" r="1.5" fill="currentColor" />
+    
+    {/* Tentacles */}
+    <path d="M25,55 Q10,70 20,90" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M35,55 Q30,80 40,95" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M50,55 Q50,85 50,95" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <path d="M65,55 Q70,80 60,95" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M75,55 Q90,70 80,90" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    
+    {/* Texture dots */}
+    <circle cx="45" cy="15" r="1" fillOpacity="0.5" />
+    <circle cx="55" cy="18" r="1" fillOpacity="0.5" />
+    <circle cx="65" cy="25" r="1" fillOpacity="0.5" />
+  </svg>
+);
+
+const TypeCard = ({ type, label, icon, desc, onClick }: { type: ActorType, label: string, icon: React.ReactNode, desc: string, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className="relative flex flex-col items-center p-6 bg-black/60 backdrop-blur-sm border border-emerald-900/30 hover:border-emerald-500 rounded-lg transition-all hover:bg-black/80 hover:scale-105 group overflow-hidden"
+    className="relative flex flex-col items-center p-8 bg-black/40 backdrop-blur-md border border-emerald-900/30 hover:border-emerald-500/50 rounded-2xl transition-all duration-500 hover:bg-black/70 hover:scale-105 group overflow-hidden shadow-xl"
   >
-    <div className="absolute inset-0 bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-    <span className="text-4xl mb-4 text-emerald-600 group-hover:text-emerald-400 group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.8)] transition-all">{icon}</span>
-    <h3 className="text-xl font-bold text-emerald-100 mb-2 z-10">{label}</h3>
-    <p className="text-xs text-gray-400 text-center z-10 group-hover:text-gray-300">{desc}</p>
+    <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/10 to-black/80 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+    <div className="mb-6 z-10 transform group-hover:-translate-y-2 transition-transform duration-500">{icon}</div>
+    <h3 className="text-xl font-bold text-emerald-100 mb-2 z-10 tracking-widest uppercase font-scary drop-shadow-md">{label}</h3>
+    <p className="text-sm text-gray-400 text-center z-10 group-hover:text-emerald-200 transition-colors font-serif border-t border-emerald-900/30 pt-3 mt-1">{desc}</p>
   </button>
 );
 
@@ -87,8 +164,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       // Smoother, smaller movement
-      const x = (e.clientX / window.innerWidth - 0.5) * 15;
-      const y = (e.clientY / window.innerHeight - 0.5) * 15;
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 20;
       setMousePos({ x, y });
     };
     window.addEventListener('mousemove', handleMouseMove);
@@ -251,70 +328,79 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-black text-gray-200 font-sans selection:bg-emerald-900 selection:text-white">
       
-      {/* --- Background Layers --- */}
+      {/* --- Background Stack (Fixed position to prevent scroll issues) --- */}
       
-      {/* 1. Base Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-[#0a100d] to-[#020503] z-[-10]" />
-      
-      {/* 2. Noise Texture */}
-      <div className="absolute inset-0 bg-noise opacity-30 z-[-9] pointer-events-none" />
-
-      {/* 3. Parallax Image Layer - Background */}
+      {/* 1. Background Image - Blurred Wet Glass */}
       <div 
-        className="absolute inset-[-5%] w-[110%] h-[110%] z-0 bg-cover bg-center pointer-events-none transition-transform duration-100 ease-out saturate-0 contrast-125 brightness-[0.4]"
+        className="fixed inset-[-50px] z-0 bg-cover bg-center transition-transform duration-100 ease-out"
         style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2456&auto=format&fit=crop')", // Dark Library/Books
-          transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)`
+          // Rain drops on window with bokeh city lights
+          backgroundImage: "url('https://images.unsplash.com/photo-1496034663057-6245f11be793?q=80&w=2670&auto=format&fit=crop')",
+          transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)`,
+          // Filter: Blur for depth, hue-rotate for Lovecraftian teal/blue tint, brightness down for mood
+          filter: 'blur(3px) brightness(0.5) contrast(1.1) hue-rotate(180deg)'
         }}
       />
 
-      {/* 4. Mysterious Glowing Runes (Only when Loading) */}
+      {/* 2. Semi-transparent Overlay to unify tone */}
+      <div className="fixed inset-0 z-0 bg-black/30 pointer-events-none mix-blend-multiply" />
+      
+      {/* 3. Noise Texture */}
+      <div className="fixed inset-0 z-0 bg-noise opacity-20 pointer-events-none" />
+
+      {/* 4. Mysterious Glowing Runes */}
       {isLoading && <MysteriousRunes />}
 
       {/* --- Main Content --- */}
       <div className="relative z-10 container mx-auto px-4 py-12 flex flex-col items-center min-h-screen">
-        <header className="mb-12 text-center space-y-4">
-          <h1 className="text-5xl md:text-7xl font-scary text-emerald-700 tracking-[0.1em] drop-shadow-[0_4px_10px_rgba(0,0,0,1)] pb-4 inline-block border-b border-emerald-900/30">
+        <header className="mb-8 text-center space-y-4">
+          <h1 className="text-5xl md:text-7xl font-scary text-emerald-500 tracking-[0.1em] drop-shadow-[0_4px_10px_rgba(16,185,129,0.3)] pb-4 inline-block border-b border-emerald-900/50">
             АРХИВЫ <span className="text-gray-400">АРКХЕМА</span>
           </h1>
-          <p className="text-gray-500 font-serif italic max-w-2xl mx-auto text-lg tracking-wider">
-            "Цифровой ритуал переноса душ"
-          </p>
+          <div className="max-w-2xl mx-auto space-y-2">
+            <p className="text-gray-400 font-serif italic text-lg tracking-wider">
+              "Цифровой ритуал переноса душ"
+            </p>
+            <p className="text-sm text-gray-300 font-light leading-relaxed drop-shadow-md">
+              Автоматическая конвертация листов персонажей (PDF, Фото, Скриншоты) в формат <strong className="text-emerald-400">Foundry VTT (v11)</strong>. 
+              Загрузите изображение, и ритуал создаст готовый JSON-файл актера и уникальный токен.
+            </p>
+          </div>
         </header>
 
-        {/* Card Container */}
-        <div className="w-full max-w-4xl bg-[#0a0a0a]/90 backdrop-blur-md border border-gray-800 p-8 rounded-sm shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+        {/* Card Container - Glassmorphism */}
+        <div className="w-full max-w-5xl bg-gray-900/60 backdrop-blur-2xl border border-white/5 p-10 rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.5)] relative overflow-hidden">
           
           {/* Decorative Corner Borders */}
-          <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-emerald-900/50 pointer-events-none" />
-          <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-emerald-900/50 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-emerald-900/50 pointer-events-none" />
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-emerald-900/50 pointer-events-none" />
+          <div className="absolute top-6 left-6 w-16 h-16 border-t-2 border-l-2 border-emerald-800/60 pointer-events-none rounded-tl-xl" />
+          <div className="absolute top-6 right-6 w-16 h-16 border-t-2 border-r-2 border-emerald-800/60 pointer-events-none rounded-tr-xl" />
+          <div className="absolute bottom-6 left-6 w-16 h-16 border-b-2 border-l-2 border-emerald-800/60 pointer-events-none rounded-bl-xl" />
+          <div className="absolute bottom-6 right-6 w-16 h-16 border-b-2 border-r-2 border-emerald-800/60 pointer-events-none rounded-br-xl" />
 
           {/* Step 0: Select Type */}
           {!actorType && (
              <div className="animate-fade-in space-y-8">
-                <h2 className="text-2xl text-center font-bold text-gray-300 mb-8 border-b border-gray-800 pb-4">Выберите сущность</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h2 className="text-2xl text-center font-bold text-gray-300 mb-8 border-b border-gray-800 pb-4 tracking-widest uppercase font-scary">Выберите сущность для призыва</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
                   <TypeCard 
                     type="character" 
                     label="Сыщик" 
-                    icon="🕵️" 
-                    desc="Классический лист персонажа." 
+                    icon={<IconInvestigator />}
+                    desc="Классический лист персонажа 7-й редакции." 
                     onClick={() => setActorType('character')}
                   />
                   <TypeCard 
                     type="npc" 
                     label="NPC" 
-                    icon="🎭" 
-                    desc="Персонаж Хранителя." 
+                    icon={<IconCultist />}
+                    desc="Персонаж Хранителя или важный союзник." 
                     onClick={() => setActorType('npc')}
                   />
                   <TypeCard 
                     type="creature" 
                     label="Чудовище" 
-                    icon="🦑" 
-                    desc="Создание из тьмы." 
+                    icon={<IconCreature />}
+                    desc="Мифологическое создание или монстр." 
                     onClick={() => setActorType('creature')}
                   />
                 </div>
@@ -325,25 +411,27 @@ const App: React.FC = () => {
           {actorType && !resultJson && !isLoading && (
             <div className="space-y-8 animate-fade-in">
               <div className="flex justify-between items-center border-b border-gray-800 pb-4">
-                 <button onClick={() => setActorType(null)} className="text-gray-500 hover:text-emerald-500 text-sm flex items-center transition-colors">
-                   ← ВЕРНУТЬСЯ
+                 <button onClick={() => setActorType(null)} className="text-gray-500 hover:text-emerald-500 text-sm flex items-center transition-colors group">
+                   <span className="mr-2 group-hover:-translate-x-1 transition-transform">←</span> ВЕРНУТЬСЯ
                  </button>
-                 <span className="text-emerald-700 font-bold tracking-widest uppercase">{actorType === 'character' ? 'Сыщик' : actorType === 'npc' ? 'NPC' : 'Чудовище'}</span>
+                 <span className="text-emerald-700 font-bold tracking-[0.2em] uppercase text-sm border border-emerald-900/50 px-3 py-1 rounded bg-black/40">{actorType === 'character' ? 'Сыщик' : actorType === 'npc' ? 'NPC' : 'Чудовище'}</span>
               </div>
 
               <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold text-gray-200">Материалы дела</h2>
-                <p className="text-sm text-gray-500 font-serif italic">Загрузите страницы или скопируйте (Ctrl+V)</p>
+                <h2 className="text-2xl font-bold text-gray-200 uppercase tracking-widest font-scary">Материалы дела</h2>
+                <p className="text-sm text-gray-500 font-serif italic">Загрузите страницы чарника или вставьте из буфера обмена (Ctrl+V)</p>
               </div>
               
-              <FileUpload
-                accept="image/*,application/pdf"
-                label={sheetFiles.length > 0 ? `Добавлено страниц: ${sheetFiles.length}` : "Загрузить документы"}
-                onFileSelect={handleFileSelect}
-              />
+              <div className="max-w-2xl mx-auto w-full">
+                <FileUpload
+                  accept="image/*,application/pdf"
+                  label={sheetFiles.length > 0 ? `Добавлено страниц: ${sheetFiles.length}` : "Перетащите файлы сюда"}
+                  onFileSelect={handleFileSelect}
+                />
+              </div>
 
               {sheetFiles.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-4 max-w-xl mx-auto">
                   <div className="flex flex-wrap gap-2 justify-center">
                     {sheetFiles.map((f, i) => (
                       <span key={i} className="px-3 py-1 bg-gray-800 rounded text-xs text-gray-400 border border-gray-700 truncate max-w-[200px]">
@@ -353,13 +441,13 @@ const App: React.FC = () => {
                   </div>
                   <button
                     onClick={processData}
-                    className="w-full py-4 text-xl font-bold text-black bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-700 hover:to-emerald-500 rounded-sm transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.99] border border-emerald-500/50"
+                    className="w-full py-4 text-xl font-bold text-black bg-gradient-to-r from-emerald-800 to-emerald-600 hover:from-emerald-700 hover:to-emerald-500 rounded-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.99] border border-emerald-500/50 uppercase tracking-widest"
                   >
                     НАЧАТЬ РИТУАЛ
                   </button>
                   <button 
                     onClick={() => setSheetFiles([])}
-                    className="w-full text-xs text-red-900 hover:text-red-500 transition-colors"
+                    className="w-full text-xs text-red-900 hover:text-red-500 transition-colors uppercase tracking-wider"
                   >
                     Очистить список
                   </button>
@@ -371,7 +459,7 @@ const App: React.FC = () => {
           {/* Loading State */}
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-24 space-y-8 animate-pulse relative z-20">
-              <div className="w-32 h-32 border-2 border-emerald-900 rounded-full flex items-center justify-center relative">
+              <div className="w-32 h-32 border-2 border-emerald-900 rounded-full flex items-center justify-center relative shadow-[0_0_30px_rgba(16,185,129,0.2)]">
                  <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
                  <span className="text-4xl animate-bounce">👁</span>
               </div>
@@ -381,12 +469,12 @@ const App: React.FC = () => {
 
           {/* Error State */}
           {error && (
-            <div className="p-8 bg-red-950/20 border border-red-900/50 rounded-sm text-center space-y-4">
-              <h3 className="text-red-500 font-bold text-2xl tracking-widest">РИТУАЛ НАРУШЕН</h3>
+            <div className="p-8 bg-red-950/40 backdrop-blur-sm border border-red-900/50 rounded-xl text-center space-y-4 shadow-lg">
+              <h3 className="text-red-500 font-bold text-2xl tracking-widest uppercase">РИТУАЛ НАРУШЕН</h3>
               <p className="text-red-300/70 font-serif italic">{error}</p>
               <button 
                 onClick={() => setError(null)}
-                className="px-8 py-2 bg-red-900/20 hover:bg-red-900/40 border border-red-800 rounded-sm text-red-200 transition-colors uppercase text-sm tracking-wider"
+                className="px-8 py-2 bg-red-900/20 hover:bg-red-900/40 border border-red-800 rounded text-red-200 transition-colors uppercase text-sm tracking-wider"
               >
                 Повторить попытку
               </button>
@@ -397,7 +485,7 @@ const App: React.FC = () => {
           {resultJson && !isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 animate-fade-in-up">
               {/* Token Column */}
-              <div className="flex flex-col items-center space-y-6 border-r-0 md:border-r border-gray-800 pr-0 md:pr-12">
+              <div className="flex flex-col items-center space-y-6 border-r-0 md:border-r border-gray-700/50 pr-0 md:pr-12">
                 <h3 className="text-xl font-bold text-emerald-700 tracking-wider">ОБРАЗ</h3>
                 {generatedTokenUrl ? (
                   <div className="relative group cursor-pointer" onClick={handleDownloadToken}>
@@ -416,7 +504,7 @@ const App: React.FC = () => {
                 <button
                   onClick={handleDownloadToken}
                   disabled={!generatedTokenUrl}
-                  className="w-full px-6 py-3 bg-transparent hover:bg-emerald-900/20 text-emerald-500 font-bold border border-emerald-900 rounded-sm transition disabled:opacity-50 disabled:cursor-not-allowed uppercase text-sm tracking-widest"
+                  className="w-full px-6 py-3 bg-transparent hover:bg-emerald-900/20 text-emerald-500 font-bold border border-emerald-900 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed uppercase text-sm tracking-widest hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]"
                 >
                   Сохранить Токен
                 </button>
@@ -427,7 +515,7 @@ const App: React.FC = () => {
                 <div className="w-full space-y-4">
                   <h3 className="text-xl font-bold text-emerald-700 tracking-wider text-center md:text-left">ДОСЬЕ</h3>
                   
-                  <div className="bg-black/60 p-6 rounded-sm border border-emerald-900/30 text-left space-y-3 font-serif text-gray-400 relative">
+                  <div className="bg-black/60 p-6 rounded-xl border border-emerald-900/30 text-left space-y-3 font-serif text-gray-400 relative shadow-inner">
                      {/* Paper texture overlay */}
                     <div className="absolute inset-0 bg-white opacity-[0.02] pointer-events-none mix-blend-overlay"></div>
                     
@@ -454,7 +542,7 @@ const App: React.FC = () => {
                       <div className="mt-4 pt-4 border-t border-gray-800">
                         <strong className="text-emerald-800 font-bold text-sm block mb-2">ОПИСАНИЕ (Заметки)</strong>
                         <div 
-                          className="text-xs text-gray-400 italic leading-relaxed"
+                          className="text-xs text-gray-400 italic leading-relaxed max-h-[150px] overflow-y-auto pr-2"
                           dangerouslySetInnerHTML={{ __html: resultJson.system.biography }}
                         />
                       </div>
@@ -466,13 +554,13 @@ const App: React.FC = () => {
                 <div className="w-full space-y-3 pt-6">
                    <button
                     onClick={handleDownloadJson}
-                    className="w-full py-4 bg-emerald-900 hover:bg-emerald-800 text-black font-bold border border-emerald-600 rounded-sm shadow-[0_0_15px_rgba(16,185,129,0.1)] transition uppercase tracking-[0.15em]"
+                    className="w-full py-4 bg-emerald-900 hover:bg-emerald-800 text-black font-bold border border-emerald-600 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.1)] transition uppercase tracking-[0.15em] hover:scale-[1.01]"
                   >
                     СКАЧАТЬ JSON
                   </button>
                   <button
                     onClick={resetAll}
-                    className="w-full py-4 mt-4 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold border border-gray-700 rounded-sm transition uppercase tracking-[0.15em] flex items-center justify-center gap-2"
+                    className="w-full py-4 mt-4 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white font-bold border border-gray-700 rounded-lg transition uppercase tracking-[0.15em] flex items-center justify-center gap-2"
                   >
                     <span>↺</span> НА ГЛАВНУЮ
                   </button>
