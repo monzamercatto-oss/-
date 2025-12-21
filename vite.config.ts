@@ -15,6 +15,7 @@ export default defineConfig({
     }
   },
   define: {
-    'process.env': process.env
+    // Внедряем только конкретную переменную вместо всего объекта process.env
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
   }
 });
