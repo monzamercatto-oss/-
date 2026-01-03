@@ -1,19 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileUpload } from './components/FileUpload';
-import { extractCharacterData, generateTokenImage, ActorType } from './services/geminiService';
+import { extractCharacterData, ActorType } from './services/geminiService';
 import { CoC7Actor } from './types';
 
-// Correctly extend the Window interface to resolve TS errors.
-// Removed the separate AIStudio interface and readonly modifier to avoid conflicts with global declarations.
-declare global {
-  interface Window {
-    aistudio: {
-      hasSelectedApiKey(): Promise<boolean>;
-      openSelectKey(): Promise<void>;
-    };
-  }
-}
+// Removed redundant Window interface declaration to fix conflicting modifiers and duplicate identifier errors.
+// The environment provides aistudio and its methods globally.
 
 const REFERENCE_JSON_STRING = `{
   "name": "Reference",
@@ -125,13 +117,13 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [resultJson, setResultJson] = useState<CoC7Actor | null>(null);
-  const [generatedTokenUrl, setGeneratedTokenUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hasUserKey, setHasUserKey] = useState(false);
 
   useEffect(() => {
     const checkKey = async () => {
+      // @ts-ignore - window.aistudio is pre-configured and accessible in the context.
       const selected = await window.aistudio.hasSelectedApiKey();
       setHasUserKey(selected);
     };
@@ -147,8 +139,8 @@ const App: React.FC = () => {
   }, []);
 
   const handleSelectKey = async () => {
+    // @ts-ignore - window.aistudio is pre-configured and accessible in the context.
     await window.aistudio.openSelectKey();
-    // Mitigate race condition: assume the key selection was successful.
     setHasUserKey(true);
   };
 
@@ -173,7 +165,6 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setResultJson(null);
-    setGeneratedTokenUrl(null);
 
     try {
       setLoadingStep("РАСШИФРОВКА РУН (Оцифровка)...");
@@ -181,28 +172,12 @@ const App: React.FC = () => {
       const filesData = await Promise.all(filePromises);
       const actorData = await extractCharacterData(filesData, REFERENCE_JSON_STRING, actorType);
       setResultJson(actorData);
-
-      // ГЕНЕРАЦИЯ ОБРАЗА ВРЕМЕННО ОТКЛЮЧЕНА ДЛЯ ЭКОНОМИИ ЛИМИТОВ
-      /*
-      setLoadingStep("ПРИЗЫВ СУЩНОСТИ (Генерация токена)...");
-      let description = "";
-      if (actorData.system.biography) {
-         description = actorData.system.biography;
-      } else if (actorType === 'creature') {
-         description = `${actorData.name} - Lovecraftian monster. ${actorData.system.infos?.type || ''}. Terrible appearance.`;
-      } else {
-         description = `${actorData.system.infos.occupation || 'Character'} ${actorData.system.infos.sex || ''}, age ${actorData.system.infos.age || 'unknown'}. 1920s era.`;
-      }
-      const promptDescription = description.length > 300 ? description.substring(0, 300) : description;
-      const rawTokenBase64 = await generateTokenImage(promptDescription, actorType);
-      await processAndSetToken(rawTokenBase64);
-      */
     } catch (err: any) {
       console.error("Process Data Error:", err);
-      // Handle the case where the API key is not found or has been revoked.
       if (err.message?.includes("Requested entity was not found")) {
         setHasUserKey(false);
         setError("API ключ не найден. Пожалуйста, выберите ключ в диалоговом окне.");
+        // @ts-ignore - window.aistudio is pre-configured and accessible in the context.
         await window.aistudio.openSelectKey();
         setHasUserKey(true);
       } else {
@@ -212,48 +187,6 @@ const App: React.FC = () => {
       setIsLoading(false);
       setLoadingStep("");
     }
-  };
-
-  const processAndSetToken = (base64Data: string) => {
-    return new Promise<void>((resolve) => {
-      const img = new Image();
-      img.src = `data:image/png;base64,${base64Data}`;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const size = 512;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.clearRect(0, 0, size, size);
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
-        const scale = Math.max(size / img.width, size / img.height);
-        const x = (size / 2) - (img.width / 2) * scale;
-        const y = (size / 2) - (img.height / 2) * scale;
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        const gradient = ctx.createRadialGradient(size/2, size/2, size/3, size/2, size/2, size/2);
-        gradient.addColorStop(0, "rgba(0,0,0,0)");
-        gradient.addColorStop(0.7, "rgba(10,10,10,0.3)");
-        gradient.addColorStop(1, "rgba(0,0,0,0.8)");
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.strokeStyle = actorType === 'creature' ? '#4a4a4a' : '#2f2f2f';
-        ctx.lineWidth = 12;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.strokeStyle = actorType === 'creature' ? '#800000' : '#d4af37';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 12, 0, Math.PI * 2);
-        ctx.stroke();
-        setGeneratedTokenUrl(canvas.toDataURL('image/png'));
-        resolve();
-      };
-    });
   };
 
   const handleDownloadJson = () => {
@@ -268,21 +201,10 @@ const App: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const handleDownloadToken = () => {
-    if (!generatedTokenUrl) return;
-    const link = document.createElement('a');
-    link.href = generatedTokenUrl;
-    link.download = `${resultJson?.name || 'token'}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const resetAll = () => {
     setResultJson(null);
     setSheetFiles([]);
     setActorType(null);
-    setGeneratedTokenUrl(null);
     setError(null);
   }
 
@@ -303,7 +225,6 @@ const App: React.FC = () => {
       <div className="fixed inset-0 z-0 bg-black/30 pointer-events-none mix-blend-multiply" />
       <div className="fixed inset-0 z-0 bg-noise opacity-20 pointer-events-none" />
       
-      {/* Кнопка настроек доступа */}
       <div className="fixed top-4 right-4 z-50">
         <button 
           onClick={handleSelectKey}
@@ -325,34 +246,34 @@ const App: React.FC = () => {
               "Цифровой ритуал переноса душ"
             </p>
             <p className="text-sm text-gray-300 font-light leading-relaxed drop-shadow-md">
-              Автоматическая конвертация листов персонажей (PDF, Фото, Скриншоты) в формат <strong className="text-emerald-400">Foundry VTT (v11)</strong>. 
+              Автоматическая конвертация листов персонажей в формат <strong className="text-emerald-400">Foundry VTT (v11)</strong>. 
             </p>
           </div>
         </header>
-        <div className="w-full max-w-5xl bg-gray-900/60 backdrop-blur-2xl border border-white/5 p-10 rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.5)] relative overflow-hidden">
+        <div className="w-full max-w-4xl bg-gray-900/60 backdrop-blur-2xl border border-white/5 p-10 rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.5)] relative overflow-hidden">
           {!actorType && (
              <div className="animate-fade-in space-y-8">
-                <h2 className="text-2xl text-center font-bold text-gray-300 mb-8 border-b border-gray-800 pb-4 tracking-widest uppercase font-scary">Выберите сущность для призыва</h2>
+                <h2 className="text-2xl text-center font-bold text-gray-300 mb-8 border-b border-gray-800 pb-4 tracking-widest uppercase font-scary">Выберите сущность</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
                   <TypeCard 
                     type="character" 
                     label="Сыщик" 
                     icon={<IconInvestigator />}
-                    desc="Классический лист персонажа 7-й редакции." 
+                    desc="Классический лист персонажа." 
                     onClick={() => setActorType('character')}
                   />
                   <TypeCard 
                     type="npc" 
                     label="NPC" 
                     icon={<IconCultist />}
-                    desc="Персонаж Хранителя или важный союзник." 
+                    desc="Персонаж Хранителя." 
                     onClick={() => setActorType('npc')}
                   />
                   <TypeCard 
                     type="creature" 
                     label="Чудовище" 
                     icon={<IconCreature />}
-                    desc="Мифологическое создание или монстр." 
+                    desc="Мифологическое создание." 
                     onClick={() => setActorType('creature')}
                   />
                 </div>
@@ -365,9 +286,6 @@ const App: React.FC = () => {
                    <span className="mr-2 group-hover:-translate-x-1 transition-transform">←</span> ВЕРНУТЬСЯ
                  </button>
                  <span className="text-emerald-700 font-bold tracking-[0.2em] uppercase text-sm border border-emerald-900/50 px-3 py-1 rounded bg-black/40">{actorType === 'character' ? 'Сыщик' : actorType === 'npc' ? 'NPC' : 'Чудовище'}</span>
-              </div>
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold text-gray-200 uppercase tracking-widest font-scary">Материалы дела</h2>
               </div>
               <div className="max-w-2xl mx-auto w-full">
                 <FileUpload
@@ -408,7 +326,6 @@ const App: React.FC = () => {
             <div className="p-8 bg-red-950/40 backdrop-blur-sm border border-red-900/50 rounded-xl text-center space-y-4 shadow-lg">
               <h3 className="text-red-500 font-bold text-2xl tracking-widest uppercase">РИТУАЛ НАРУШЕН</h3>
               <p className="text-red-300/70 font-serif italic text-sm leading-relaxed">{error}</p>
-              
               <div className="flex flex-col md:flex-row gap-4 justify-center pt-4">
                 <button 
                   onClick={() => setError(null)}
@@ -416,100 +333,61 @@ const App: React.FC = () => {
                 >
                   Повторить попытку
                 </button>
-                
-                {error.includes("ЛИМИТ") && (
-                  <button 
-                    onClick={handleSelectKey}
-                    className="px-8 py-3 bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-800 rounded text-emerald-200 transition-colors uppercase text-sm tracking-wider"
-                  >
-                    Подключить свой ключ
-                  </button>
-                )}
               </div>
-              
-              {error.includes("ЛИМИТ") && (
-                <p className="text-xs text-gray-500 mt-2 italic">
-                  Бесплатные лимиты Google ограничены. Вы можете подождать 1 минуту или использовать свой API ключ (Billing documentation: ai.google.dev/gemini-api/docs/billing)
-                </p>
-              )}
             </div>
           )}
           {resultJson && !isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 animate-fade-in-up">
-              <div className="flex flex-col items-center space-y-6 border-r-0 md:border-r border-gray-700/50 pr-0 md:pr-12">
-                <h3 className="text-xl font-bold text-emerald-700 tracking-wider">ОБРАЗ</h3>
-                {generatedTokenUrl ? (
-                  <div className="relative group cursor-pointer" onClick={handleDownloadToken}>
-                     <div className="absolute -inset-4 bg-emerald-900/20 rounded-full blur-xl group-hover:bg-emerald-500/20 transition duration-1000"></div>
-                     <img 
-                      src={generatedTokenUrl} 
-                      alt="Generated Token" 
-                      className="relative w-64 h-64 object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-64 h-64 bg-gray-900 rounded-full flex flex-col items-center justify-center border border-dashed border-emerald-900/30 p-6 text-center space-y-4">
-                    <span className="text-4xl opacity-20">🖼️</span>
-                    <span className="text-gray-500 text-xs font-serif italic">Генерация образа временно отключена для стабильности ритуала</span>
-                  </div>
-                )}
-                <button
-                  onClick={handleDownloadToken}
-                  disabled={!generatedTokenUrl}
-                  className="w-full px-6 py-3 bg-transparent hover:bg-emerald-900/20 text-emerald-500 font-bold border border-emerald-900 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed uppercase text-sm tracking-widest"
-                >
-                  {generatedTokenUrl ? 'Сохранить Токен' : 'Образ не создан'}
-                </button>
-              </div>
-              <div className="flex flex-col justify-between space-y-6">
-                <div className="w-full space-y-4">
-                  <h3 className="text-xl font-bold text-emerald-700 tracking-wider text-center md:text-left">ДОСЬЕ</h3>
-                  <div className="bg-black/60 p-6 rounded-xl border border-emerald-900/30 text-left space-y-3 font-serif text-gray-400 relative shadow-inner">
-                    <p className="border-b border-gray-800 pb-2"><strong className="text-emerald-600 font-bold mr-2">ИМЯ:</strong> <span className="text-gray-200">{resultJson.name}</span></p>
-                    {actorType !== 'creature' && (
-                        <>
-                        <p><strong className="text-gray-500 mr-2 text-xs uppercase">Профессия:</strong> {resultJson.system.infos.occupation || '—'}</p>
-                        <p><strong className="text-gray-500 mr-2 text-xs uppercase">Возраст:</strong> {resultJson.system.infos.age || '—'}</p>
-                        </>
-                    )}
-                     <div className="pt-2 pb-4">
-                        <strong className="text-emerald-800 font-bold text-sm block mb-2">ХАРАКТЕРИСТИКИ</strong>
-                        <div className="grid grid-cols-4 gap-2 text-xs text-center">
-                          <div className="bg-gray-900/50 p-1 border border-gray-800 rounded">STR<br/><span className="text-white text-lg">{resultJson.system.characteristics.str.value}</span></div>
-                          <div className="bg-gray-900/50 p-1 border border-gray-800 rounded">DEX<br/><span className="text-white text-lg">{resultJson.system.characteristics.dex.value}</span></div>
-                          <div className="bg-gray-900/50 p-1 border border-gray-800 rounded">POW<br/><span className="text-white text-lg">{resultJson.system.characteristics.pow.value}</span></div>
-                          <div className="bg-gray-900/50 p-1 border border-gray-800 rounded">SIZ<br/><span className="text-white text-lg">{resultJson.system.characteristics.siz.value}</span></div>
-                        </div>
+            <div className="animate-fade-in-up space-y-8 max-w-2xl mx-auto">
+              <div className="flex flex-col items-center space-y-6">
+                <h3 className="text-2xl font-bold text-emerald-700 tracking-wider font-scary uppercase">ДОСЬЕ СФОРМИРОВАНО</h3>
+                <div className="w-full bg-black/60 p-8 rounded-2xl border border-emerald-900/30 text-left space-y-4 font-serif text-gray-400 shadow-inner">
+                  <p className="border-b border-gray-800 pb-3"><strong className="text-emerald-600 font-bold mr-2 text-lg uppercase tracking-widest">ИМЯ:</strong> <span className="text-gray-100 text-xl">{resultJson.name}</span></p>
+                  {actorType !== 'creature' && (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <p><strong className="text-gray-500 mr-2 uppercase text-xs">Профессия:</strong> <span className="text-gray-300">{resultJson.system.infos.occupation || '—'}</span></p>
+                      <p><strong className="text-gray-500 mr-2 uppercase text-xs">Возраст:</strong> <span className="text-gray-300">{resultJson.system.infos.age || '—'}</span></p>
                     </div>
-                    {resultJson.system.biography && (
-                      <div className="mt-4 pt-4 border-t border-gray-800">
-                        <strong className="text-emerald-800 font-bold text-sm block mb-2">ОПИСАНИЕ (Заметки)</strong>
-                        <div 
-                          className="text-xs text-gray-400 italic leading-relaxed max-h-[150px] overflow-y-auto pr-2"
-                          dangerouslySetInnerHTML={{ __html: resultJson.system.biography }}
-                        />
-                      </div>
-                    )}
+                  )}
+                  <div className="pt-4 border-t border-gray-800">
+                    <strong className="text-emerald-800 font-bold text-xs block mb-3 uppercase tracking-tighter">Основные Характеристики</strong>
+                    <div className="grid grid-cols-4 gap-3 text-xs text-center">
+                      <div className="bg-emerald-950/20 p-2 border border-emerald-900/30 rounded">STR<br/><span className="text-white text-xl font-bold">{resultJson.system.characteristics.str.value}</span></div>
+                      <div className="bg-emerald-950/20 p-2 border border-emerald-900/30 rounded">DEX<br/><span className="text-white text-xl font-bold">{resultJson.system.characteristics.dex.value}</span></div>
+                      <div className="bg-emerald-950/20 p-2 border border-emerald-900/30 rounded">POW<br/><span className="text-white text-xl font-bold">{resultJson.system.characteristics.pow.value}</span></div>
+                      <div className="bg-emerald-950/20 p-2 border border-emerald-900/30 rounded">SIZ<br/><span className="text-white text-xl font-bold">{resultJson.system.characteristics.siz.value}</span></div>
+                    </div>
                   </div>
+                  {resultJson.system.biography && (
+                    <div className="mt-6 pt-4 border-t border-gray-800">
+                      <strong className="text-emerald-800 font-bold text-xs block mb-2 uppercase">Краткое Досье</strong>
+                      <div 
+                        className="text-sm text-gray-400 italic leading-relaxed max-h-[200px] overflow-y-auto pr-2 custom-scrollbar"
+                        dangerouslySetInnerHTML={{ __html: resultJson.system.biography }}
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="w-full space-y-3 pt-6">
-                   <button
+                <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
                     onClick={handleDownloadJson}
-                    className="w-full py-4 bg-emerald-900 hover:bg-emerald-800 text-black font-bold border border-emerald-600 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.1)] transition uppercase tracking-[0.15em]"
+                    className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-black font-black border border-emerald-400 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all uppercase tracking-[0.2em] transform hover:-translate-y-1 active:translate-y-0"
                   >
-                    СКАЧАТЬ JSON
+                    СКАЧАТЬ ДЛЯ FOUNDRY
                   </button>
                   <button
                     onClick={resetAll}
-                    className="w-full py-4 mt-4 bg-gray-900/50 hover:bg-gray-800 text-gray-400 hover:text-white font-bold border border-gray-700 rounded-lg transition uppercase tracking-[0.15em] flex items-center justify-center gap-2"
+                    className="w-full py-5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold border border-gray-700 rounded-xl transition-all uppercase tracking-[0.15em]"
                   >
-                    <span>↺</span> НА ГЛАВНУЮ
+                    НОВЫЙ РИТУАЛ
                   </button>
                 </div>
               </div>
             </div>
           )}
         </div>
+        <footer className="mt-12 text-gray-600 text-xs font-serif tracking-widest uppercase opacity-50">
+          Только для Call of Cthulhu 7th Edition
+        </footer>
       </div>
     </div>
   );
