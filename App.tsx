@@ -1,7 +1,19 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { extractCharacterData, generateTokenImage, ActorType } from './services/geminiService';
 import { CoC7Actor } from './types';
+
+// Correctly extend the Window interface to resolve TS errors.
+// Removed the separate AIStudio interface and readonly modifier to avoid conflicts with global declarations.
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey(): Promise<boolean>;
+      openSelectKey(): Promise<void>;
+    };
+  }
+}
 
 const REFERENCE_JSON_STRING = `{
   "name": "Reference",
@@ -116,8 +128,15 @@ const App: React.FC = () => {
   const [generatedTokenUrl, setGeneratedTokenUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [hasUserKey, setHasUserKey] = useState(false);
 
   useEffect(() => {
+    const checkKey = async () => {
+      const selected = await window.aistudio.hasSelectedApiKey();
+      setHasUserKey(selected);
+    };
+    checkKey();
+
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth - 0.5) * 20;
       const y = (e.clientY / window.innerHeight - 0.5) * 20;
@@ -126,6 +145,12 @@ const App: React.FC = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  const handleSelectKey = async () => {
+    await window.aistudio.openSelectKey();
+    // Mitigate race condition: assume the key selection was successful.
+    setHasUserKey(true);
+  };
 
   const fileToBase64 = (file: File): Promise<{ data: string; mimeType: string }> => {
     return new Promise((resolve, reject) => {
@@ -157,6 +182,8 @@ const App: React.FC = () => {
       const actorData = await extractCharacterData(filesData, REFERENCE_JSON_STRING, actorType);
       setResultJson(actorData);
 
+      // ГЕНЕРАЦИЯ ОБРАЗА ВРЕМЕННО ОТКЛЮЧЕНА ДЛЯ ЭКОНОМИИ ЛИМИТОВ
+      /*
       setLoadingStep("ПРИЗЫВ СУЩНОСТИ (Генерация токена)...");
       let description = "";
       if (actorData.system.biography) {
@@ -169,9 +196,18 @@ const App: React.FC = () => {
       const promptDescription = description.length > 300 ? description.substring(0, 300) : description;
       const rawTokenBase64 = await generateTokenImage(promptDescription, actorType);
       await processAndSetToken(rawTokenBase64);
+      */
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Произошла непредвиденная ошибка.");
+      console.error("Process Data Error:", err);
+      // Handle the case where the API key is not found or has been revoked.
+      if (err.message?.includes("Requested entity was not found")) {
+        setHasUserKey(false);
+        setError("API ключ не найден. Пожалуйста, выберите ключ в диалоговом окне.");
+        await window.aistudio.openSelectKey();
+        setHasUserKey(true);
+      } else {
+        setError(err.message || "Произошла непредвиденная ошибка.");
+      }
     } finally {
       setIsLoading(false);
       setLoadingStep("");
@@ -247,6 +283,7 @@ const App: React.FC = () => {
     setSheetFiles([]);
     setActorType(null);
     setGeneratedTokenUrl(null);
+    setError(null);
   }
 
   const handleFileSelect = (files: File[]) => {
@@ -265,6 +302,18 @@ const App: React.FC = () => {
       />
       <div className="fixed inset-0 z-0 bg-black/30 pointer-events-none mix-blend-multiply" />
       <div className="fixed inset-0 z-0 bg-noise opacity-20 pointer-events-none" />
+      
+      {/* Кнопка настроек доступа */}
+      <div className="fixed top-4 right-4 z-50">
+        <button 
+          onClick={handleSelectKey}
+          className={`px-4 py-2 rounded-full border text-xs font-bold transition-all flex items-center gap-2 ${hasUserKey ? 'border-emerald-500 text-emerald-500 bg-emerald-950/20' : 'border-gray-700 text-gray-400 bg-black/40 hover:border-emerald-500'}`}
+        >
+          <span className={hasUserKey ? 'text-emerald-400' : 'text-gray-600'}>●</span>
+          {hasUserKey ? 'СВОЙ КЛЮЧ АКТИВЕН' : 'ИСПОЛЬЗОВАТЬ СВОЙ КЛЮЧ'}
+        </button>
+      </div>
+
       {isLoading && <MysteriousRunes />}
       <div className="relative z-10 container mx-auto px-4 py-12 flex flex-col items-center min-h-screen">
         <header className="mb-8 text-center space-y-4">
@@ -358,13 +407,31 @@ const App: React.FC = () => {
           {error && (
             <div className="p-8 bg-red-950/40 backdrop-blur-sm border border-red-900/50 rounded-xl text-center space-y-4 shadow-lg">
               <h3 className="text-red-500 font-bold text-2xl tracking-widest uppercase">РИТУАЛ НАРУШЕН</h3>
-              <p className="text-red-300/70 font-serif italic">{error}</p>
-              <button 
-                onClick={() => setError(null)}
-                className="px-8 py-2 bg-red-900/20 hover:bg-red-900/40 border border-red-800 rounded text-red-200 transition-colors uppercase text-sm tracking-wider"
-              >
-                Повторить попытку
-              </button>
+              <p className="text-red-300/70 font-serif italic text-sm leading-relaxed">{error}</p>
+              
+              <div className="flex flex-col md:flex-row gap-4 justify-center pt-4">
+                <button 
+                  onClick={() => setError(null)}
+                  className="px-8 py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-800 rounded text-red-200 transition-colors uppercase text-sm tracking-wider"
+                >
+                  Повторить попытку
+                </button>
+                
+                {error.includes("ЛИМИТ") && (
+                  <button 
+                    onClick={handleSelectKey}
+                    className="px-8 py-3 bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-800 rounded text-emerald-200 transition-colors uppercase text-sm tracking-wider"
+                  >
+                    Подключить свой ключ
+                  </button>
+                )}
+              </div>
+              
+              {error.includes("ЛИМИТ") && (
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  Бесплатные лимиты Google ограничены. Вы можете подождать 1 минуту или использовать свой API ключ (Billing documentation: ai.google.dev/gemini-api/docs/billing)
+                </p>
+              )}
             </div>
           )}
           {resultJson && !isLoading && (
@@ -381,16 +448,17 @@ const App: React.FC = () => {
                     />
                   </div>
                 ) : (
-                  <div className="w-64 h-64 bg-gray-900 rounded-full flex items-center justify-center border border-dashed border-gray-700">
-                    <span className="text-gray-600">Нет образа</span>
+                  <div className="w-64 h-64 bg-gray-900 rounded-full flex flex-col items-center justify-center border border-dashed border-emerald-900/30 p-6 text-center space-y-4">
+                    <span className="text-4xl opacity-20">🖼️</span>
+                    <span className="text-gray-500 text-xs font-serif italic">Генерация образа временно отключена для стабильности ритуала</span>
                   </div>
                 )}
                 <button
                   onClick={handleDownloadToken}
                   disabled={!generatedTokenUrl}
-                  className="w-full px-6 py-3 bg-transparent hover:bg-emerald-900/20 text-emerald-500 font-bold border border-emerald-900 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed uppercase text-sm tracking-widest"
+                  className="w-full px-6 py-3 bg-transparent hover:bg-emerald-900/20 text-emerald-500 font-bold border border-emerald-900 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed uppercase text-sm tracking-widest"
                 >
-                  Сохранить Токен
+                  {generatedTokenUrl ? 'Сохранить Токен' : 'Образ не создан'}
                 </button>
               </div>
               <div className="flex flex-col justify-between space-y-6">
